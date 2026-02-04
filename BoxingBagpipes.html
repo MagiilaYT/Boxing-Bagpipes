@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistic Bagpipe Boxing Championship</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            font-family: 'Oswald', sans-serif;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border-radius: 4px;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .health-section {
+            text-align: center;
+        }
+
+        .fighter-name {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .health-bar-bg {
+            width: 250px;
+            height: 20px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .health-fill {
+            height: 100%;
+            transition: width 0.2s ease-out;
+            border-radius: 8px;
+        }
+
+        .p1-health { background: linear-gradient(90deg, #ff3333, #cc0000); }
+        .p2-health { background: linear-gradient(90deg, #3333ff, #0000cc); }
+
+        .timer-box {
+            background: linear-gradient(180deg, #1a1a1a, #000);
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            padding: 10px 25px;
+        }
+
+        .timer {
+            font-size: 2.5rem;
+            color: #ffd700;
+            font-weight: bold;
+            font-family: monospace;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 100;
+        }
+
+        .title {
+            font-size: 5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ffd700, #ff6b6b, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 10px;
+            text-align: center;
+            filter: drop-shadow(0 0 20px rgba(255,215,0,0.3));
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(180deg, #ff4444 0%, #aa0000 100%);
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 10px 30px rgba(255,0,0,0.4);
+            transition: all 0.3s;
+            font-family: 'Oswald', sans-serif;
+            letter-spacing: 2px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255,0,0,0.6);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.6);
+            background: rgba(0,0,0,0.5);
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+        }
+
+        .hidden { display: none !important; }
+
+        .cheat-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10,10,10,0.98);
+            border: 2px solid #ff00ff;
+            border-radius: 15px;
+            padding: 30px;
+            min-width: 300px;
+            z-index: 200;
+        }
+
+        .cheat-title {
+            color: #ff00ff;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .cheat-btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+
+        .cheat-btn:hover {
+            background: rgba(255,0,255,0.2);
+        }
+
+        .cheat-btn.active {
+            background: rgba(0,255,100,0.3);
+            border-color: #00ff64;
+        }
+
+        .cheat-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            color: black;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .damage-text {
+            position: absolute;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff4444;
+            pointer-events: none;
+            animation: damageFloat 0.8s ease-out forwards;
+            text-shadow: 0 0 10px rgba(255,0,0,0.5);
+        }
+
+        @keyframes damageFloat {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1.3); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="cheat-indicator hidden" id="cheatIndicator">CHEATS ACTIVE</div>
+
+    <!-- HUD -->
+    <div class="ui-overlay hidden" id="hud">
+        <div class="hud">
+            <div class="health-section">
+                <div class="fighter-name" style="color: #ff4444;">You</div>
+                <div class="health-bar-bg">
+                    <div id="p1Health" class="health-fill p1-health" style="width: 100%;"></div>
+                </div>
+            </div>
+            <div class="timer-box">
+                <div class="timer" id="timer">03:00</div>
+            </div>
+            <div class="health-section">
+                <div class="fighter-name" style="color: #4444ff;">Bagpipe Champ</div>
+                <div class="health-bar-bg">
+                    <div id="p2Health" class="health-fill p2-health" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen">
+        <h1 class="title">Championship<br>Bagpipe Boxing</h1>
+        <p class="subtitle">WASD to Move | SPACE to Punch | W to Jump </p>
+        <button class="btn" id="startBtn">Enter The Ring</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="screen hidden">
+        <h1 id="resultTitle" style="font-size: 4rem; color: white; margin-bottom: 10px;">GAME OVER</h1>
+        <p id="resultSub" style="color: #888; font-size: 1.2rem; margin-bottom: 30px;">Result</p>
+        <button class="btn" id="restartBtn">Rematch</button>
+    </div>
+
+    <!-- Cheat Menu -->
+    <div id="cheatMenu" class="cheat-menu hidden">
+        <div class="cheat-title">Cheat Menu</div>
+        <button class="cheat-btn" id="cheatInfHealth" onclick="toggleCheat('infHealth')">Infinite Health: OFF</button>
+        <button class="cheat-btn" id="cheatInstaWin" onclick="toggleCheat('instaWin')">One Punch Kill: OFF</button>
+        <button class="cheat-btn" id="cheatFly" onclick="toggleCheat('fly')">Fly Mode: OFF</button>
+        <button class="cheat-btn" onclick="closeCheatMenu()">Close [Press 7]</button>
+    </div>
+
+    <div class="controls-hint hidden" id="controlsHint">
+        WASD Move | SPACE Punch | W Jump
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Set canvas size
+canvas.width = 1200;
+canvas.height = 800;
+
+// Game state
+let gameState = 'START';
+let lastTime = 0;
+let gameTime = 180;
+let timerInterval = null;
+
+// Camera shake
+let shakeIntensity = 0;
+
+// Input
+const keys = {};
+const cheats = {
+    infHealth: false,
+    instaWin: false,
+    fly: false
+};
+
+// Physics constants
+const GRAVITY = 0.6;
+const GROUND_Y = 650;
+const ARENA_LEFT = 100;
+const ARENA_RIGHT = 1100;
+
+// Players
+let player = {
+    x: 300,
+    y: GROUND_Y,
+    vx: 0,
+    vy: 0,
+    width: 80,
+    height: 180,
+    health: 100,
+    stamina: 100,
+    facing: 1,
+    isPunching: false,
+    isJumping: false,
+    punchTimer: 0,
+    color: '#ff6600',
+    skinColor: '#ffccaa'
+};
+
+let enemy = {
+    x: 900,
+    y: GROUND_Y,
+    vx: 0,
+    vy: 0,
+    width: 90,
+    height: 190,
+    health: 100,
+    stamina: 100,
+    facing: -1,
+    isPunching: false,
+    isJumping: false,
+    punchTimer: 0,
+    aiTimer: 0,
+    color: '#0066cc',
+    skinColor: '#ffaaaa'
+};
+
+// Bagpipe weapon
+let bagpipe = {
+    angle: 0,
+    x: 0,
+    y: 0,
+    length: 100
+};
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('restartBtn').addEventListener('click', startGame);
+    
+    window.addEventListener('keydown', (e) => {
+        keys[e.code] = true;
+        
+        if (e.key === '7') {
+            toggleCheatMenu();
+            return;
+        }
+        
+        if (gameState === 'PLAYING' && !document.getElementById('cheatMenu').classList.contains('hidden')) {
+            return;
+        }
+        
+        if (e.code === 'Space') punch();
+        if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+            if (cheats.fly) {
+                player.vy = -8;
+            } else if (!player.isJumping) {
+                player.vy = -15;
+                player.isJumping = true;
+            }
+        }
+    });
+    
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+    });
+});
+
+// Game functions
+function startGame() {
+    console.log('Game starting...');
+    gameState = 'PLAYING';
+    gameTime = 180;
+    
+    // Reset player
+    player.x = 300;
+    player.y = GROUND_Y;
+    player.vx = 0;
+    player.vy = 0;
+    player.health = cheats.infHealth ? 9999 : 100;
+    player.stamina = 100;
+    player.facing = 1;
+    player.isPunching = false;
+    player.isJumping = false;
+    
+    // Reset enemy
+    enemy.x = 900;
+    enemy.y = GROUND_Y;
+    enemy.vx = 0;
+    enemy.vy = 0;
+    enemy.health = 100;
+    enemy.stamina = 100;
+    enemy.facing = -1;
+    enemy.isPunching = false;
+    enemy.isJumping = false;
+    
+    // UI
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('gameOverScreen').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    document.getElementById('controlsHint').classList.remove('hidden');
+    
+    updateHUD();
+    
+    // Start timer
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        if (gameState === 'PLAYING') {
+            gameTime--;
+            const m = Math.floor(gameTime / 60);
+            const s = gameTime % 60;
+            document.getElementById('timer').textContent = 
+                `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            
+            if (gameTime <= 0) {
+                endGame(player.health > enemy.health);
+            }
+        }
+    }, 1000);
+    
+    requestAnimationFrame(gameLoop);
+}
+
+function endGame(playerWon) {
+    gameState = 'GAMEOVER';
+    clearInterval(timerInterval);
+    
+    const title = document.getElementById('resultTitle');
+    const sub = document.getElementById('resultSub');
+    
+    if (playerWon) {
+        title.textContent = 'VICTORY!';
+        title.style.color = '#ffd700';
+        sub.textContent = 'You are the Bagpipe Boxing Champion!';
+    } else {
+        title.textContent = 'DEFEAT';
+        title.style.color = '#ff4444';
+        sub.textContent = 'The Bagpipe Champion has defeated you...';
+    }
+    
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('controlsHint').classList.add('hidden');
+    document.getElementById('gameOverScreen').classList.remove('hidden');
+}
+
+// Cheat functions
+function toggleCheatMenu() {
+    const menu = document.getElementById('cheatMenu');
+    if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        if (gameState === 'PLAYING') gameState = 'PAUSED';
+    } else {
+        menu.classList.add('hidden');
+        if (gameState === 'PAUSED') gameState = 'PLAYING';
+    }
+}
+
+function toggleCheat(name) {
+    cheats[name] = !cheats[name];
+    
+    if (name === 'infHealth' && cheats.infHealth) {
+        player.health = 9999;
+        updateHUD();
+    }
+    
+    const btn = document.getElementById('cheat' + name.charAt(0).toUpperCase() + name.slice(1));
+    btn.textContent = btn.textContent.split(':')[0] + ': ' + (cheats[name] ? 'ON' : 'OFF');
+    btn.classList.toggle('active', cheats[name]);
+    
+    const any = Object.values(cheats).some(v => v);
+    document.getElementById('cheatIndicator').classList.toggle('hidden', !any);
+}
+
+function closeCheatMenu() {
+    document.getElementById('cheatMenu').classList.add('hidden');
+    if (gameState === 'PAUSED') gameState = 'PLAYING';
+}
+
+// Combat
+function punch() {
+    if (player.isPunching || player.stamina < 10) return;
+    
+    player.isPunching = true;
+    player.punchTimer = 0;
+    player.stamina -= 10;
+    updateHUD();
+    
+    // Animate bagpipe swing
+    const duration = cheats.instaWin ? 10 : 20;
+    
+    function swing() {
+        player.punchTimer++;
+        
+        // Swing arc
+        if (player.punchTimer < duration / 2) {
+            bagpipe.angle = -Math.PI / 4 - (player.punchTimer / (duration / 2)) * (Math.PI / 2);
+        } else {
+            bagpipe.angle = -Math.PI / 4 - Math.PI / 2 + ((player.punchTimer - duration / 2) / (duration / 2)) * (Math.PI / 2);
+        }
+        
+        // Check hit at middle of swing
+        if (player.punchTimer === Math.floor(duration / 2)) {
+            checkHit();
+        }
+        
+        if (player.punchTimer < duration) {
+            requestAnimationFrame(swing);
+        } else {
+            player.isPunching = false;
+            bagpipe.angle = 0;
+        }
+    }
+    swing();
+}
+
+function checkHit() {
+    const dist = Math.abs(player.x - enemy.x);
+    
+    if (dist < 150) {
+        const dmg = cheats.instaWin ? 999 : 15 + Math.random() * 10;
+        enemy.health -= dmg;
+        
+        // Knockback
+        enemy.vx = player.facing * 10;
+        enemy.vy = -5;
+        
+        // Effects
+        shakeIntensity = 10;
+        showDamage(Math.floor(dmg), enemy.x, enemy.y - 100);
+        
+        updateHUD();
+        
+        if (enemy.health <= 0) {
+            endGame(true);
+        }
+    }
+}
+
+function showDamage(amt, x, y) {
+    const div = document.createElement('div');
+    div.className = 'damage-text';
+    div.textContent = amt;
+    div.style.left = (canvas.offsetLeft + x) + 'px';
+    div.style.top = (canvas.offsetTop + y) + 'px';
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 800);
+}
+
+function updateHUD() {
+    document.getElementById('p1Health').style.width = Math.max(0, Math.min(100, player.health / (cheats.infHealth ? 9999 : 1) * 100)) + '%';
+    document.getElementById('p2Health').style.width = Math.max(0, Math.min(100, enemy.health)) + '%';
+}
+
+// Drawing functions
+function drawRoundedRect(x, y, w, h, r, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawGradientRect(x, y, w, h, color1, color2) {
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, color1);
+    grad.addColorStop(1, color2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, w, h);
+}
+
+function drawFighter(p, isPlayer) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(0, 10, p.width/2, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Flip if facing left
+    if (p.facing === -1) {
+        ctx.scale(-1, 1);
+    }
+    
+    // Body (muscle definition)
+    drawGradientRect(-p.width/2 + 10, -p.height + 40, p.width - 20, p.height - 60, p.color, darken(p.color, 30));
+    
+    // Chest muscles
+    ctx.fillStyle = lighten(p.color, 20);
+    ctx.beginPath();
+    ctx.ellipse(-15, -p.height + 80, 20, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(15, -p.height + 80, 20, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Abs
+    ctx.fillStyle = darken(p.color, 20);
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 2; j++) {
+            ctx.fillRect(-20 + j * 25, -p.height + 120 + i * 30, 20, 25);
+        }
+    }
+    
+    // Head
+    ctx.fillStyle = p.skinColor;
+    ctx.beginPath();
+    ctx.arc(0, -p.height + 20, 25, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Face features
+    ctx.fillStyle = '#333';
+    // Eyes
+    ctx.beginPath();
+    ctx.arc(-8, -p.height + 15, 3, 0, Math.PI * 2);
+    ctx.arc(8, -p.height + 15, 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Nose
+    ctx.fillStyle = darken(p.skinColor, 10);
+    ctx.beginPath();
+    ctx.moveTo(0, -p.height + 15);
+    ctx.lineTo(-5, -p.height + 25);
+    ctx.lineTo(5, -p.height + 25);
+    ctx.fill();
+    
+    // Mouth (determined)
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-8, -p.height + 30);
+    ctx.lineTo(8, -p.height + 30);
+    ctx.stroke();
+    
+    // Headband (player) or Hat (enemy)
+    if (isPlayer) {
+        ctx.fillStyle = '#cc0000';
+        ctx.fillRect(-28, -p.height + 5, 56, 10);
+    } else {
+        // Scottish hat
+        ctx.fillStyle = '#004400';
+        ctx.beginPath();
+        ctx.arc(0, -p.height + 10, 30, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#cc0000';
+        ctx.beginPath();
+        ctx.arc(0, -p.height - 5, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // Beard
+        ctx.fillStyle = '#cc0000';
+        ctx.beginPath();
+        ctx.moveTo(-15, -p.height + 35);
+        ctx.lineTo(0, -p.height + 55);
+        ctx.lineTo(15, -p.height + 35);
+        ctx.fill();
+    }
+    
+    // Arms
+    ctx.fillStyle = p.skinColor;
+    
+    // Left arm (back)
+    ctx.save();
+    ctx.translate(-p.width/2 + 10, -p.height + 70);
+    ctx.rotate(-0.3);
+    ctx.fillRect(-15, 0, 30, 70);
+    ctx.restore();
+    
+    // Right arm (holding bagpipe)
+    ctx.save();
+    ctx.translate(p.width/2 - 10, -p.height + 70);
+    if (p.isPunching) {
+        ctx.rotate(-1.5);
+    } else {
+        ctx.rotate(-0.5);
+    }
+    ctx.fillRect(-15, 0, 30, 70);
+    // Glove
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.arc(0, 80, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    
+    // Legs
+    ctx.fillStyle = darken(p.skinColor, 20);
+    // Left leg
+    ctx.fillRect(-25, -40, 20, 50);
+    // Right leg
+    ctx.fillRect(5, -40, 20, 50);
+    
+    // Shorts/kilt
+    if (isPlayer) {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-p.width/2 + 5, -60, p.width - 10, 40);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(-p.width/2 + 5, -20, p.width - 10, 5);
+    } else {
+        // Kilt
+        ctx.fillStyle = '#004400';
+        ctx.beginPath();
+        ctx.moveTo(-p.width/2, -50);
+        ctx.lineTo(p.width/2, -50);
+        ctx.lineTo(p.width/2 + 10, 0);
+        ctx.lineTo(-p.width/2 - 10, 0);
+        ctx.fill();
+        // Sporran
+        ctx.fillStyle = '#8B4513';
+        ctx.beginPath();
+        ctx.arc(0, -25, 15, 0, Math.PI, false);
+        ctx.fill();
+    }
+    
+    ctx.restore();
+    
+    // Draw bagpipe for player
+    if (isPlayer) {
+        drawBagpipe(p);
+    } else {
+        // Enemy holds bagpipe too
+        drawEnemyBagpipe(p);
+    }
+}
+
+function drawBagpipe(p) {
+    ctx.save();
+    ctx.translate(p.x, p.y - p.height + 100);
+    if (p.facing === -1) ctx.scale(-1, 1);
+    
+    // Rotate based on punch
+    let angle = bagpipe.angle;
+    if (!p.isPunching) angle = -0.3;
+    
+    ctx.rotate(angle);
+    
+    // Bag (air reservoir)
+    const bagGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 35);
+    bagGrad.addColorStop(0, '#aa0000');
+    bagGrad.addColorStop(1, '#660000');
+    ctx.fillStyle = bagGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 35, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Bag texture
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-20, -10);
+    ctx.lineTo(20, 10);
+    ctx.moveTo(-20, 10);
+    ctx.lineTo(20, -10);
+    ctx.stroke();
+    
+    // Drones (gold pipes)
+    const goldGrad = ctx.createLinearGradient(-10, -80, 10, -80);
+    goldGrad.addColorStop(0, '#b8860b');
+    goldGrad.addColorStop(0.5, '#ffd700');
+    goldGrad.addColorStop(1, '#b8860b');
+    ctx.fillStyle = goldGrad;
+    
+    // Bass drone
+    ctx.fillRect(-8, -100, 10, 100);
+    // Decorative rings
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(-9, -90, 12, 5);
+    ctx.fillRect(-9, -60, 12, 5);
+    
+    // Tenor drones
+    ctx.fillStyle = goldGrad;
+    ctx.fillRect(10, -80, 8, 80);
+    ctx.fillRect(25, -70, 6, 70);
+    
+    // Chanter (melody pipe - pointing down/forward)
+    ctx.save();
+    ctx.rotate(0.5);
+    const chanterGrad = ctx.createLinearGradient(0, 0, 10, 0);
+    chanterGrad.addColorStop(0, '#3d2817');
+    chanterGrad.addColorStop(0.5, '#5c4033');
+    chanterGrad.addColorStop(1, '#3d2817');
+    ctx.fillStyle = chanterGrad;
+    ctx.fillRect(0, 20, 12, 80);
+    
+    // Finger holes
+    ctx.fillStyle = '#000';
+    for (let i = 0; i < 7; i++) {
+        ctx.beginPath();
+        ctx.arc(6, 35 + i * 10, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+    
+    // Blowpipe
+    ctx.fillStyle = '#333';
+    ctx.fillRect(-50, -5, 40, 8);
+    
+    ctx.restore();
+}
+
+function drawEnemyBagpipe(p) {
+    ctx.save();
+    ctx.translate(p.x, p.y - p.height + 100);
+    if (p.facing === -1) ctx.scale(-1, 1);
+    
+    ctx.rotate(0.3);
+    
+    // Simpler bagpipe for enemy
+    const bagGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 35);
+    bagGrad.addColorStop(0, '#660000');
+    bagGrad.addColorStop(1, '#330000');
+    ctx.fillStyle = bagGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 35, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
+}
+
+function drawBackground() {
+    // Arena floor
+    const floorGrad = ctx.createLinearGradient(0, 400, 0, 800);
+    floorGrad.addColorStop(0, '#2a2a2a');
+    floorGrad.addColorStop(1, '#0a0a0a');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, 400, canvas.width, 400);
+    
+    // Floor texture (mat)
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    for (let i = 0; i < 20; i++) {
+        for (let j = 0; j < 10; j++) {
+            if ((i + j) % 2 === 0) {
+                ctx.fillRect(i * 60, 400 + j * 40, 60, 40);
+            }
+        }
+    }
+    
+    // Ring ropes
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 4;
+    for (let i = 1; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 400 + i * 80);
+        ctx.lineTo(canvas.width, 400 + i * 80);
+        ctx.stroke();
+    }
+    
+    // Posts
+    for (let i = 0; i < 5; i++) {
+        const x = i * 300;
+        const grad = ctx.createLinearGradient(x - 15, 0, x + 15, 0);
+        grad.addColorStop(0, '#444');
+        grad.addColorStop(0.5, '#888');
+        grad.addColorStop(1, '#444');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x - 15, 200, 30, 500);
+    }
+    
+    // Crowd (blurred background)
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, canvas.width, 200);
+    
+    // Crowd dots
+    ctx.fillStyle = '#333';
+    for (let i = 0; i < 100; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * 150;
+        const size = Math.random() * 3;
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    
+    // Lighting vignette
+    const vignette = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 200, canvas.width/2, canvas.height/2, 800);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function darken(color, percent) {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.max((num >> 16) - amt, 0);
+    const G = Math.max((num >> 8 & 0x00FF) - amt, 0);
+    const B = Math.max((num & 0x0000FF) - amt, 0);
+    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+}
+
+function lighten(color, percent) {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.min((num >> 16) + amt, 255);
+    const G = Math.min((num >> 8 & 0x00FF) + amt, 255);
+    const B = Math.min((num & 0x0000FF) + amt, 255);
+    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+}
+
+// Main game loop
+function gameLoop() {
+    if (gameState !== 'PLAYING' && gameState !== 'PAUSED') return;
+    
+    // Clear with shake
+    ctx.save();
+    if (shakeIntensity > 0) {
+        ctx.translate(
+            (Math.random() - 0.5) * shakeIntensity,
+            (Math.random() - 0.5) * shakeIntensity
+        );
+        shakeIntensity *= 0.9;
+        if (shakeIntensity < 0.5) shakeIntensity = 0;
+    }
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    drawBackground();
+    
+    if (gameState === 'PLAYING') {
+        updatePhysics();
+        updateAI();
+    }
+    
+    // Draw fighters (back to front based on y)
+    if (player.y > enemy.y) {
+        drawFighter(enemy, false);
+        drawFighter(player, true);
+    } else {
+        drawFighter(player, true);
+        drawFighter(enemy, false);
+    }
+    
+    ctx.restore();
+    
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+function updatePhysics() {
+    // Player movement
+    const speed = 6;
+    player.vx = 0;
+    
+    if (keys['KeyA'] || keys['ArrowLeft']) {
+        player.vx = -speed;
+        player.facing = -1;
+    }
+    if (keys['KeyD'] || keys['ArrowRight']) {
+        player.vx = speed;
+        player.facing = 1;
+    }
+    
+    // Apply velocity
+    player.x += player.vx;
+    player.y += player.vy;
+    
+    // Gravity
+    if (cheats.fly) {
+        if (keys['KeyS'] || keys['ArrowDown']) player.vy = 5;
+        else if (!keys['KeyW'] && !keys['ArrowUp']) player.vy *= 0.9;
+    } else {
+        player.vy += GRAVITY;
+    }
+    
+    // Ground collision
+    if (player.y > GROUND_Y) {
+        player.y = GROUND_Y;
+        player.vy = 0;
+        player.isJumping = false;
+    }
+    
+    // Bounds
+    player.x = Math.max(ARENA_LEFT + player.width/2, Math.min(ARENA_RIGHT - player.width/2, player.x));
+    
+    // Enemy physics
+    enemy.x += enemy.vx;
+    enemy.y += enemy.vy;
+    enemy.vy += GRAVITY;
+    
+    if (enemy.y > GROUND_Y) {
+        enemy.y = GROUND_Y;
+        enemy.vy = 0;
+        enemy.isJumping = false;
+    }
+    
+    // Stamina regen
+    if (player.stamina < 100) player.stamina += 0.2;
+}
+
+function updateAI() {
+    enemy.aiTimer++;
+    
+    const dist = player.x - enemy.x;
+    enemy.facing = dist > 0 ? 1 : -1;
+    
+    if (enemy.isPunching) return;
+    
+    if (Math.abs(dist) > 120) {
+        enemy.vx = enemy.facing * 3;
+    } else if (enemy.aiTimer > 60) {
+        enemy.isPunching = true;
+        enemy.aiTimer = 0;
+        
+        setTimeout(() => {
+            if (Math.abs(player.x - enemy.x) < 150 && !cheats.infHealth) {
+                player.health -= 10;
+                shakeIntensity = 8;
+                showDamage(10, player.x, player.y - 100);
+                updateHUD();
+                
+                // Knockback
+                player.vx = -enemy.facing * 8;
+                player.vy = -5;
+                
+                if (player.health <= 0) endGame(false);
+            }
+            enemy.isPunching = false;
+        }, 300);
+    } else {
+        enemy.vx *= 0.9;
+    }
+}
+
+// Initial render
+drawBackground();
+drawFighter(player, true);
+drawFighter(enemy, false);
+</script>
+</body>
+</html>
+
